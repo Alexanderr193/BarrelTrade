@@ -1,0 +1,6 @@
+name: BarrelTrade
+version: '1.0-SNAPSHOT'
+main: org.alexanderr193.barrelTrade.BarrelTrade
+api-version: '1.19'
+authors: [ Alexanderr193 ]
+description: Trade via barrel right now
