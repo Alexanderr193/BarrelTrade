@@ -1,4 +1,4 @@
-package org.alexanderr193.barrelTrade.utils;
+package org.alexanderr193.barrelTrade.data.serialization;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -11,11 +11,11 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Base64;
 
-public class Serialization {
+public class ItemSerializer {
     private static final Base64.Encoder BASE64_ENCODER = Base64.getEncoder();
     private static final Base64.Decoder BASE64_DECODER = Base64.getDecoder();
 
-    private Serialization() {}
+    private ItemSerializer() {}
 
     public static String itemStackToBase64(ItemStack itemStack) throws IOException {
         if (itemStack == null) return null;

@@ -1,33 +1,31 @@
-package org.alexanderr193.barrelTrade.event;
+package org.alexanderr193.barrelTrade.listeners;
 
-import org.alexanderr193.barrelTrade.barrel.Barrel;
-
-import org.alexanderr193.barrelTrade.database.BarrelRepository;
-
-
+import org.alexanderr193.barrelTrade.api.events.BarrelTradeEvent;
+import org.alexanderr193.barrelTrade.data.model.Barrel;
+import org.alexanderr193.barrelTrade.data.repository.BarrelRepository;
+import org.alexanderr193.barrelTrade.view.gui.BarrelInventoryView;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.block.Block;
-
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 
-import java.util.*;
-
-import static org.alexanderr193.barrelTrade.utils.Util.updateInventoryWithBarrel;
+import java.util.ArrayList;
+import java.util.Objects;
+import java.util.Optional;
 
 public class BlockInteractListener implements Listener {
     private final BarrelRepository barrelRepository;
-    private final BarrelAddedListener barrelAddedListener;
+    private final TradeListener tradeListener;
     private static final String SHOP_ITEM_NAME = "shop";
 
-    public BlockInteractListener(BarrelRepository barrelRepository, BarrelAddedListener barrelAddedListener) {
+    public BlockInteractListener(BarrelRepository barrelRepository, TradeListener tradeListener) {
         this.barrelRepository = Objects.requireNonNull(barrelRepository, "barrelRepository cannot be null");
-        this.barrelAddedListener = barrelAddedListener;
+        this.tradeListener = tradeListener;
     }
 
     @EventHandler(priority = EventPriority.NORMAL)
@@ -62,11 +60,11 @@ public class BlockInteractListener implements Listener {
             }
             if (barrelOptional.isPresent()) {
                 Barrel barrel = barrelOptional.get();
-                if (barrelAddedListener.getPlayerByBarrel(barrel).isEmpty()) {
-                    updateInventoryWithBarrel(barrel, event.getPlayer());
-                    BarrelAddedEvent.callEvent(barrel, event.getPlayer());
+                if (tradeListener.getPlayerByBarrel(barrel).isEmpty()) {
+                    BarrelInventoryView.openBarrelShop(barrel, event.getPlayer());
+                    BarrelTradeEvent.callEvent(barrel, event.getPlayer());
                 } else {
-                    event.getPlayer().sendMessage("The " + ChatColor.YELLOW + barrelAddedListener.getPlayerByBarrel(barrel).get().getName() + ChatColor.RESET + " player is currently using the store");
+                    event.getPlayer().sendMessage("The " + ChatColor.YELLOW + tradeListener.getPlayerByBarrel(barrel).get().getName() + ChatColor.RESET + " player is currently using the store");
                 }
 
                 event.setCancelled(true);

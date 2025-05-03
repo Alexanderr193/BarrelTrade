@@ -1,9 +1,9 @@
-package org.alexanderr193.barrelTrade.event;
+package org.alexanderr193.barrelTrade.listeners;
 
-import org.alexanderr193.barrelTrade.barrel.Barrel;
-import org.alexanderr193.barrelTrade.barrel.Slot;
-import org.alexanderr193.barrelTrade.database.BarrelRepository;
-import org.alexanderr193.barrelTrade.utils.Serialization;
+import org.alexanderr193.barrelTrade.data.model.Barrel;
+import org.alexanderr193.barrelTrade.data.model.Slot;
+import org.alexanderr193.barrelTrade.data.repository.BarrelRepository;
+import org.alexanderr193.barrelTrade.data.serialization.ItemSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -19,11 +19,11 @@ import java.util.Optional;
 
 public class EntityExplodeListener implements Listener {
     private final BarrelRepository barrelRepository;
-    private final BarrelAddedListener barrelAddedListener;
+    private final TradeListener tradeListener;
 
-    public EntityExplodeListener(BarrelRepository barrelRepository, BarrelAddedListener barrelAddedListener) {
+    public EntityExplodeListener(BarrelRepository barrelRepository, TradeListener tradeListener) {
         this.barrelRepository = barrelRepository;
-        this.barrelAddedListener = barrelAddedListener;
+        this.tradeListener = tradeListener;
     }
 
     @EventHandler
@@ -50,7 +50,7 @@ public class EntityExplodeListener implements Listener {
                         owner.sendMessage(ChatColor.RED + "Your shop barrel was destroyed by an explosion at " +
                                 block.getX() + ", " + block.getY() + ", " + block.getZ());
                         owner.playSound(owner.getLocation(), Sound.ENTITY_GENERIC_EXPLODE, 1, 2);
-                        Optional<Player> optionalPlayer = barrelAddedListener.getPlayerByBarrel(barrel);
+                        Optional<Player> optionalPlayer = tradeListener.getPlayerByBarrel(barrel);
                         optionalPlayer.ifPresent(HumanEntity::closeInventory);
                     }
 
@@ -61,10 +61,10 @@ public class EntityExplodeListener implements Listener {
                         throw new RuntimeException(e);
                     }
 
-                    barrelAddedListener.removeBarrel(barrel);
+                    tradeListener.removeBarrel(barrel);
 
                     for (Slot slot : barrel.getSlots()) {
-                        ItemStack itemStack = Serialization.itemStackFromBase64(slot.getBase64Product());
+                        ItemStack itemStack = ItemSerializer.itemStackFromBase64(slot.getBase64Product());
                         block.getWorld().dropItemNaturally(block.getLocation(), itemStack);
                     }
                     return false;

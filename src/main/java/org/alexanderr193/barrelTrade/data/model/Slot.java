@@ -1,4 +1,6 @@
-package org.alexanderr193.barrelTrade.barrel;
+package org.alexanderr193.barrelTrade.data.model;
+
+import org.alexanderr193.barrelTrade.data.model.enums.Currency;
 
 public class Slot {
     protected int slotId;

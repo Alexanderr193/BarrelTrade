@@ -1,15 +1,15 @@
-package org.alexanderr193.barrelTrade.database;
+package org.alexanderr193.barrelTrade.data.repository;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
-import org.alexanderr193.barrelTrade.barrel.Barrel;
-import org.alexanderr193.barrelTrade.barrel.Slot;
-import org.bukkit.Location;
+import org.alexanderr193.barrelTrade.data.model.Barrel;
+import org.alexanderr193.barrelTrade.data.model.Slot;
 
-import java.io.*;
-
+import java.io.IOException;
+import java.io.Reader;
+import java.io.Writer;
 import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -68,20 +68,26 @@ public class BarrelRepository {
     }
 
     public Optional<Barrel> findBarrel(int x,  int y, int z, String worldName) throws Exception {
+        Barrel barrel = new Barrel(x, y, z, worldName, null, null);
         return getAllBarrels().stream()
-                .filter(b -> b.equals(x, y, z, worldName))
+                .filter(b -> b.equals(barrel))
                 .findFirst();
     }
 
     public void addBarrel(Barrel barrel) throws Exception {
-        List<Barrel> barrels = new ArrayList<>(getAllBarrels());
-        barrels.add(barrel);
-        saveBarrels(barrels);
+        lock.writeLock().lock();
+        try {
+            List<Barrel> barrels = new ArrayList<>(getAllBarrels());
+            barrels.add(barrel);
+            saveBarrels(barrels);
+        } finally {
+            lock.writeLock().unlock();
+        }
     }
 
     public void removeBarrel(Barrel barrel) throws Exception {
         List<Barrel> barrels = new ArrayList<>(getAllBarrels());
-        barrels.removeIf(b -> b.equals(barrel.getX(), barrel.getY(),barrel.getZ(), barrel.getWorld()));
+        barrels.removeIf(b -> b.equals(barrel));
         saveBarrels(barrels);
     }
 

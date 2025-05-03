@@ -1,10 +1,9 @@
-package org.alexanderr193.barrelTrade.event;
+package org.alexanderr193.barrelTrade.listeners;
 
-import org.alexanderr193.barrelTrade.barrel.Barrel;
-import org.alexanderr193.barrelTrade.barrel.Slot;
-import org.alexanderr193.barrelTrade.database.BarrelRepository;
-import org.alexanderr193.barrelTrade.utils.Serialization;
-import org.alexanderr193.barrelTrade.utils.Util;
+import org.alexanderr193.barrelTrade.data.model.Barrel;
+import org.alexanderr193.barrelTrade.data.model.Slot;
+import org.alexanderr193.barrelTrade.data.repository.BarrelRepository;
+import org.alexanderr193.barrelTrade.data.serialization.ItemSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -22,11 +21,11 @@ import java.util.Optional;
 
 public class BlockBreakListener implements Listener {
     private final BarrelRepository barrelRepository;
-    private final BarrelAddedListener barrelAddedListener;
+    private final TradeListener tradeListener;
 
-    public BlockBreakListener(BarrelRepository barrelRepository, BarrelAddedListener barrelAddedListener) {
+    public BlockBreakListener(BarrelRepository barrelRepository, TradeListener tradeListener) {
         this.barrelRepository = barrelRepository;
-        this.barrelAddedListener = barrelAddedListener;
+        this.tradeListener = tradeListener;
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -47,8 +46,8 @@ public class BlockBreakListener implements Listener {
                 Barrel barrel = barrelOpt.get();
                 String ownerName = barrel.getOwner();
 
-                Optional<Player> optionalPlayer = barrelAddedListener.getPlayerByBarrel(barrel);
-                barrelAddedListener.removeBarrel(barrel);
+                Optional<Player> optionalPlayer = tradeListener.getPlayerByBarrel(barrel);
+                tradeListener.removeBarrel(barrel);
                 barrelRepository.removeBarrel(barrel);
 
                 // Notify owner if online
@@ -65,7 +64,7 @@ public class BlockBreakListener implements Listener {
                 block.setType(Material.AIR);
 
                 for (Slot slot : barrel.getSlots()) {
-                    ItemStack itemStack = Serialization.itemStackFromBase64(slot.getBase64Product());
+                    ItemStack itemStack = ItemSerializer.itemStackFromBase64(slot.getBase64Product());
                     block.getWorld().dropItemNaturally(block.getLocation(), itemStack);
                 }
 

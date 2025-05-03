@@ -1,7 +1,6 @@
-package org.alexanderr193.barrelTrade.barrel;
+package org.alexanderr193.barrelTrade.data.model;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
 public class Barrel {
@@ -57,13 +56,12 @@ public class Barrel {
 
     @Override
     public boolean equals(Object o) {
-        if (o == null || getClass() != o.getClass()) return false;
-        Barrel barrel = (Barrel) o;
-        return x == barrel.x && y == barrel.y && z == barrel.z && Objects.equals(world, barrel.world);
-    }
-
-    public boolean equals(int x, int y, int z, String worldName) {
-        return x == this.x && y == this.y && z == this.z && worldName.equals(this.world);
+        if (this == o) return true;
+        if (!(o instanceof Barrel barrel)) return false;
+        return x == barrel.x &&
+                y == barrel.y &&
+                z == barrel.z &&
+                world.equals(barrel.world);
     }
 
     @Override

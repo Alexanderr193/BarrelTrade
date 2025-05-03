@@ -1,7 +1,6 @@
-package org.alexanderr193.barrelTrade.event;
+package org.alexanderr193.barrelTrade.listeners;
 
-import org.alexanderr193.barrelTrade.BarrelHolder;
-import org.bukkit.entity.Player;
+import org.alexanderr193.barrelTrade.data.model.TradeInventoryHolder;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryDragEvent;
@@ -11,7 +10,7 @@ import java.util.Set;
 public class InventoryDragListener implements Listener {
     @EventHandler
     public void onInventoryDrag(InventoryDragEvent event) {
-        if (event.getInventory().getHolder() instanceof BarrelHolder) {
+        if (event.getInventory().getHolder() instanceof TradeInventoryHolder) {
             event.setCancelled(true); // Always cancel drags in our GUI
 
             // Get which slots are being dragged over lol

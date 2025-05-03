@@ -1,7 +1,7 @@
-package org.alexanderr193.barrelTrade.event;
+package org.alexanderr193.barrelTrade.listeners;
 
-import org.alexanderr193.barrelTrade.barrel.Barrel;
-import org.alexanderr193.barrelTrade.database.BarrelRepository;
+import org.alexanderr193.barrelTrade.data.model.Barrel;
+import org.alexanderr193.barrelTrade.data.repository.BarrelRepository;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.block.Block;
@@ -16,11 +16,11 @@ import java.util.Optional;
 
 public class BlockPistonExtendListener implements Listener {
     private final BarrelRepository barrelRepository;
-    private final BarrelAddedListener barrelAddedListener;
+    private final TradeListener tradeListener;
 
-    public BlockPistonExtendListener(BarrelRepository barrelRepository, BarrelAddedListener barrelAddedListener) {
+    public BlockPistonExtendListener(BarrelRepository barrelRepository, TradeListener tradeListener) {
         this.barrelRepository = barrelRepository;
-        this.barrelAddedListener = barrelAddedListener;
+        this.tradeListener = tradeListener;
     }
 
     @EventHandler
@@ -57,7 +57,7 @@ public class BlockPistonExtendListener implements Listener {
             Barrel barrel = barrelOptional.get();
             event.setCancelled(true);
 
-            barrelAddedListener.removeBarrel(barrel);
+            tradeListener.removeBarrel(barrel);
 
             event.getBlock().getWorld().playSound(
                     event.getBlock().getLocation(),

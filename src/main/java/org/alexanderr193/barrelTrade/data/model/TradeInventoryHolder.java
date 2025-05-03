@@ -1,13 +1,12 @@
-package org.alexanderr193.barrelTrade;
+package org.alexanderr193.barrelTrade.data.model;
 
-import org.alexanderr193.barrelTrade.barrel.Barrel;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 
-public class BarrelHolder implements InventoryHolder {
+public class TradeInventoryHolder implements InventoryHolder {
     private Barrel barrel;
 
-    public BarrelHolder(Barrel barrel) {
+    public TradeInventoryHolder(Barrel barrel) {
         this.barrel = barrel;
     }
 

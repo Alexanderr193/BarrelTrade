@@ -1,9 +1,9 @@
 package org.alexanderr193.barrelTrade;
 
-import org.alexanderr193.barrelTrade.command.BarrelCommand;
-import org.alexanderr193.barrelTrade.database.BarrelRepository;
+import org.alexanderr193.barrelTrade.commands.BarrelCommand;
+import org.alexanderr193.barrelTrade.listeners.*;
+import org.alexanderr193.barrelTrade.data.repository.BarrelRepository;
 
-import org.alexanderr193.barrelTrade.event.*;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -13,20 +13,26 @@ import java.util.logging.Level;
 
 public final class BarrelTrade extends JavaPlugin {
     private BarrelRepository barrelRepository;
-    private BarrelAddedListener barrelAddedListener;
+    private TradeListener tradeListener;
 
     private void registerListeners() {
         Arrays.asList(
-                new BlockInteractListener(barrelRepository, barrelAddedListener),
+                new BlockInteractListener(barrelRepository, tradeListener),
                 new InventoryClickListener(barrelRepository),
                 new InventoryDragListener(),
                 new InventoryMoveItemEventListener(),
-                new InventoryCloseListener(barrelAddedListener),
-                new EntityExplodeListener(barrelRepository, barrelAddedListener),
-                new BlockBreakListener(barrelRepository, barrelAddedListener),
-                new BlockPistonExtendListener(barrelRepository, barrelAddedListener),
-                this.barrelAddedListener
-        ).forEach(listener -> getServer().getPluginManager().registerEvents(listener, this));
+                new InventoryCloseListener(tradeListener),
+                new EntityExplodeListener(barrelRepository, tradeListener),
+                new BlockBreakListener(barrelRepository, tradeListener),
+                new BlockPistonExtendListener(barrelRepository, tradeListener),
+                this.tradeListener
+        ).forEach(listener -> {
+            try {
+                getServer().getPluginManager().registerEvents(listener, this);
+            } catch (Exception e) {
+                getLogger().log(Level.WARNING, "Failed to register listener: " + listener.getClass().getSimpleName(), e);
+            }
+        });
     }
 
     @Override
@@ -37,11 +43,11 @@ public final class BarrelTrade extends JavaPlugin {
             getLogger().log(Level.SEVERE, "Failed to init BarrelDB", e);
             Bukkit.getPluginManager().disablePlugin(this);
         }
-        barrelAddedListener = new BarrelAddedListener();
+        tradeListener = new TradeListener();
 
 
-        getCommand("load").setExecutor(new BarrelCommand(barrelRepository, barrelAddedListener));
-        getCommand("load").setTabCompleter(new BarrelCommand(barrelRepository, barrelAddedListener));
+        getCommand("load").setExecutor(new BarrelCommand(barrelRepository, tradeListener));
+        getCommand("load").setTabCompleter(new BarrelCommand(barrelRepository, tradeListener));
 
         registerListeners();
     }
