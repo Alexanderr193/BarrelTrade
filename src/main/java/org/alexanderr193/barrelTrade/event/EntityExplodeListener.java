@@ -1,0 +1,76 @@
+package org.alexanderr193.barrelTrade.event;
+
+import org.alexanderr193.barrelTrade.barrel.Barrel;
+import org.alexanderr193.barrelTrade.barrel.Slot;
+import org.alexanderr193.barrelTrade.database.BarrelRepository;
+import org.alexanderr193.barrelTrade.utils.Serialization;
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.Material;
+import org.bukkit.Sound;
+import org.bukkit.entity.HumanEntity;
+import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.inventory.ItemStack;
+
+import java.util.Optional;
+
+public class EntityExplodeListener implements Listener {
+    private final BarrelRepository barrelRepository;
+    private final BarrelAddedListener barrelAddedListener;
+
+    public EntityExplodeListener(BarrelRepository barrelRepository, BarrelAddedListener barrelAddedListener) {
+        this.barrelRepository = barrelRepository;
+        this.barrelAddedListener = barrelAddedListener;
+    }
+
+    @EventHandler
+    public void onEntityExplodeEvent(EntityExplodeEvent event) throws RuntimeException {
+        event.blockList().removeIf(block -> {
+            if (block.getType() == Material.BARREL) {
+                Optional<Barrel> barrelOptional;
+                try {
+                    barrelOptional = barrelRepository.findBarrel(
+                            block.getX(),
+                            block.getY(),
+                            block.getZ(),
+                            block.getWorld().getName()
+                    );
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+                if (barrelOptional.isPresent()) {
+                    Barrel barrel = barrelOptional.get();
+                    // Notify owner
+                    String ownerName = barrel.getOwner();
+                    Player owner = Bukkit.getPlayer(ownerName);
+                    if (owner != null) {
+                        owner.sendMessage(ChatColor.RED + "Your shop barrel was destroyed by an explosion at " +
+                                block.getX() + ", " + block.getY() + ", " + block.getZ());
+                        owner.playSound(owner.getLocation(), Sound.ENTITY_GENERIC_EXPLODE, 1, 2);
+                        Optional<Player> optionalPlayer = barrelAddedListener.getPlayerByBarrel(barrel);
+                        optionalPlayer.ifPresent(HumanEntity::closeInventory);
+                    }
+
+                    // Remove from storage
+                    try {
+                        barrelRepository.removeBarrel(barrel);
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+
+                    barrelAddedListener.removeBarrel(barrel);
+
+                    for (Slot slot : barrel.getSlots()) {
+                        ItemStack itemStack = Serialization.itemStackFromBase64(slot.getBase64Product());
+                        block.getWorld().dropItemNaturally(block.getLocation(), itemStack);
+                    }
+                    return false;
+                }
+            }
+            return false;
+        });
+    }
+}

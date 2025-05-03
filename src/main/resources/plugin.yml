@@ -4,3 +4,7 @@ main: org.alexanderr193.barrelTrade.BarrelTrade
 api-version: '1.19'
 authors: [ Alexanderr193 ]
 description: Trade via barrel right now
+commands:
+  load:
+    description: load a stack of items into a barrel
+    usage: /load
