@@ -1,13 +1,15 @@
 package org.alexanderr193.barrelTrade;
 
 import org.alexanderr193.barrelTrade.commands.BarrelCommand;
-import org.alexanderr193.barrelTrade.listeners.*;
 import org.alexanderr193.barrelTrade.data.repository.BarrelRepository;
-
+import org.alexanderr193.barrelTrade.listeners.*;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.logging.Level;
 
@@ -40,7 +42,7 @@ public final class BarrelTrade extends JavaPlugin {
         try {
             barrelRepository = new BarrelRepository(Path.of(getDataFolder().getPath()));
         } catch (Exception e) {
-            getLogger().log(Level.SEVERE, "Failed to init BarrelDB", e);
+            getLogger().log(Level.SEVERE, "Failed to init barrelRepository", e);
             Bukkit.getPluginManager().disablePlugin(this);
         }
         tradeListener = new TradeListener();
@@ -56,6 +58,23 @@ public final class BarrelTrade extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        try {
+            barrelRepository.close();
+        } catch (IOException e) {
+            getLogger().log(Level.SEVERE, "Failed to save barrel data", e);
 
+            // Emergency backup
+            try {
+                Path emergencyFile = getDataFolder().toPath().resolve("barrels_EMERGENCY.json");
+                Files.copy(
+                        barrelRepository.getDataFilePath(),
+                        emergencyFile,
+                        StandardCopyOption.REPLACE_EXISTING
+                );
+                getLogger().warning("Emergency save created in plugin folder");
+            } catch (IOException ex) {
+                getLogger().log(Level.SEVERE, "CRITICAL: Failed to create emergency backup", ex);
+            }
+        }
     }
 }

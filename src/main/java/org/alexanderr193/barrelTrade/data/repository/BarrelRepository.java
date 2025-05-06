@@ -2,7 +2,6 @@ package org.alexanderr193.barrelTrade.data.repository;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 import org.alexanderr193.barrelTrade.data.model.Barrel;
 import org.alexanderr193.barrelTrade.data.model.Slot;
@@ -13,6 +12,9 @@ import java.io.Writer;
 import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -22,94 +24,130 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class BarrelRepository {
     private final Path dataFile;
     private final Gson gson;
+    private final List<Barrel> barrelCache;  // Основной кеш
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
-    public BarrelRepository(Path dataFolder) throws Exception {
+    public BarrelRepository(Path dataFolder) throws IOException {
         this.dataFile = dataFolder.resolve("barrels.json");
         this.gson = new GsonBuilder().setPrettyPrinting().create();
-        initDataFile();
+        this.initDataFile();
+        this.barrelCache = Collections.synchronizedList(new ArrayList<>());
+        this.loadBarrelsIntoCache();
+    }
+
+    public Path getDataFilePath() {
+        return this.dataFile;
     }
 
     private void initDataFile() throws IOException {
         if (!Files.exists(dataFile)) {
-            try {
-                Files.createDirectories(dataFile.getParent());
-                saveBarrels(Collections.emptyList());
-            } catch (IOException e) {
-                throw new IOException("Failed to init barrels file", e);
-            }
+            Files.createDirectories(dataFile.getParent());
+            saveBarrels(Collections.emptyList());
         }
     }
 
-    public List<Barrel> getAllBarrels() throws Exception {
-        lock.readLock().lock();
+    private void loadBarrelsIntoCache() throws IOException {
+        lock.writeLock().lock();
         try (Reader reader = Files.newBufferedReader(dataFile)) {
             Type type = new TypeToken<List<Barrel>>() {}.getType();
             List<Barrel> barrels = gson.fromJson(reader, type);
-            return barrels != null ? barrels : Collections.emptyList();
-        } catch (JsonSyntaxException e) {
-            throw new JsonSyntaxException("Invalid JSON data", e);
-        } catch (IOException e) {
-            throw new IOException("Failed to read barrels", e);
+            barrelCache.clear();
+            if (barrels != null) {
+                barrelCache.addAll(barrels);
+            }
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public void close() throws IOException {
+        lock.writeLock().lock();
+        try {
+            saveBarrelsInternal(barrelCache);
+
+            createBackupInternal();
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    private void saveBarrelsInternal(List<Barrel> barrels) throws IOException {
+        try (Writer writer = Files.newBufferedWriter(dataFile)) {
+            gson.toJson(barrels, writer);
+        }
+    }
+
+    private void createBackupInternal() throws IOException {
+        String timestamp = LocalDateTime.now()
+                .format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
+        Path backupPath = dataFile.getParent().resolve("barrels_" + timestamp + ".json");
+        Files.copy(dataFile, backupPath, StandardCopyOption.REPLACE_EXISTING);
+    }
+
+    private void saveBarrels(List<Barrel> barrels) throws IOException {
+        lock.writeLock().lock();
+        try (Writer writer = Files.newBufferedWriter(dataFile)) {
+            gson.toJson(barrels, writer);
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public Optional<Barrel> findBarrel(int x, int y, int z, String worldName) {
+        Barrel targetBarrel = new Barrel(x, y, z, worldName, null, null);
+        lock.readLock().lock();
+        try {
+            return barrelCache.stream()
+                    .filter(b -> b.equals(targetBarrel))
+                    .findFirst();
         } finally {
             lock.readLock().unlock();
         }
     }
 
-    public void saveBarrels(List<Barrel> barrels) throws IOException {
-        lock.writeLock().lock();
-        try (Writer writer = Files.newBufferedWriter(dataFile)) {
-            gson.toJson(barrels, writer);
-        } catch (IOException e) {
-            throw new IOException("Failed to save barrels", e);
-        } finally {
-            lock.writeLock().unlock();
-        }
-    }
-
-    public Optional<Barrel> findBarrel(int x,  int y, int z, String worldName) throws Exception {
-        Barrel barrel = new Barrel(x, y, z, worldName, null, null);
-        return getAllBarrels().stream()
-                .filter(b -> b.equals(barrel))
-                .findFirst();
-    }
-
-    public void addBarrel(Barrel barrel) throws Exception {
+    public void addBarrel(Barrel barrel) throws IOException {
         lock.writeLock().lock();
         try {
-            List<Barrel> barrels = new ArrayList<>(getAllBarrels());
-            barrels.add(barrel);
-            saveBarrels(barrels);
+            barrelCache.add(barrel);
+            saveBarrels(barrelCache);
         } finally {
             lock.writeLock().unlock();
         }
     }
 
-    public void removeBarrel(Barrel barrel) throws Exception {
-        List<Barrel> barrels = new ArrayList<>(getAllBarrels());
-        barrels.removeIf(b -> b.equals(barrel));
-        saveBarrels(barrels);
+    public void removeBarrel(Barrel barrel) throws IOException {
+        lock.writeLock().lock();
+        try {
+            barrelCache.removeIf(b -> b.equals(barrel));
+            saveBarrels(barrelCache);
+        } finally {
+            lock.writeLock().unlock();
+        }
     }
 
-    public void updateSlotInBarrel(Barrel barrel, Slot slot) throws Exception {
-        List<Barrel> barrels = new ArrayList<>(getAllBarrels());
-        for (Barrel iterBarrel : barrels) {
-            if (iterBarrel.equals(barrel)) {
-                iterBarrel.setSlot(slot);
-                break;
-            }
+    public void updateSlotInBarrel(Barrel barrel, Slot slot) throws IOException {
+        lock.writeLock().lock();
+        try {
+            barrelCache.stream()
+                    .filter(b -> b.equals(barrel))
+                    .findFirst()
+                    .ifPresent(b -> b.setSlot(slot));
+            saveBarrels(barrelCache);
+        } finally {
+            lock.writeLock().unlock();
         }
-        saveBarrels(barrels);
     }
 
-    public void removeSlotInBarrel(Barrel barrel, int slotId) throws Exception {
-        List<Barrel> barrels = new ArrayList<>(getAllBarrels());
-        for (Barrel iterBarrel : barrels) {
-            if (iterBarrel.equals(barrel)) {
-                iterBarrel.getSlots().removeIf(slot -> slot.getSlotId() == slotId);
-                break;
-            }
+    public void removeSlotInBarrel(Barrel barrel, int slotId) throws IOException {
+        lock.writeLock().lock();
+        try {
+            barrelCache.stream()
+                    .filter(b -> b.equals(barrel))
+                    .findFirst()
+                    .ifPresent(b -> b.getSlots().removeIf(s -> s.getSlotId() == slotId));
+            saveBarrels(barrelCache);
+        } finally {
+            lock.writeLock().unlock();
         }
-        saveBarrels(barrels);
     }
 }
