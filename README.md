@@ -25,19 +25,19 @@ Spigot plugin for creating shop barrels in Minecraft
 /load <slot> <currency> <price>
 ```
 - Slot: 1-27 (barrel slot number)
-- Currency: gold_ingot, emerald, diamond 
+- Currency: EMERALD, DIAMOND, IRON, COAL, NETHERITE
 - Price: 1-64
 
 ### Example:
 ```
-/load 5 gold_ingot 3
+/load 5 DIAMOND 3
 ```
-- Sets slot 5 to cost 3 gold ingots
+- Sets slot 5 to cost 3 diamonds
 
 ## Command Help
 ```
 Usage: /load <slot> <currency> <price>
-Currencies: gold_ingot, emerald, diamond, etc.
+Currencies: EMERALD, DIAMOND, IRON, COAL, NETHERITE
 Slot range: 1-27
 Price range: 1-64
 ```
